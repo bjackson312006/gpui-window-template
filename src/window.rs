@@ -244,6 +244,7 @@ impl Render for AppWindow {
                                     .h_full()
                                     .flex()
                                     .items_center()
+                                    .window_control_area(WindowControlArea::Drag)
                                     .justify_center()
                                     .child(
                                         div()
