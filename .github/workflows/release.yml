@@ -128,3 +128,35 @@ jobs:
         with:
           name: gpui-test-macos-dmg
           path: target/aarch64-apple-darwin/release/bundle/osx/*.dmg
+
+  release:
+    name: Publish rolling release
+    needs: [linux, windows, macos]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: ls -lR artifacts
+
+      - name: Replace "latest" rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release delete latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create latest \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Latest build" \
+            --prerelease \
+            --notes "Rolling build from \`main\` @ ${GITHUB_SHA}. Built by workflow run [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})." \
+            artifacts/**/*
