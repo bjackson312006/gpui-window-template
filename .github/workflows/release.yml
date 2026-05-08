@@ -152,6 +152,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          mapfile -t files < <(find artifacts -type f)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No artifacts found to upload" >&2
+            exit 1
+          fi
           gh release delete latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
           gh release create latest \
             --repo "$GITHUB_REPOSITORY" \
@@ -159,4 +164,4 @@ jobs:
             --title "Latest build" \
             --prerelease \
             --notes "Rolling build from \`main\` @ ${GITHUB_SHA}. Built by workflow run [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})." \
-            artifacts/**/*
+            "${files[@]}"
